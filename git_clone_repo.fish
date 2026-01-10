@@ -1,9 +1,10 @@
-#!env
-DIR_PARENT=$(dirname $GITHUB_WORKSPACE)
-mkdir -p $(dirname $GITHUB_WORKSPACE)
-cd $(dirname $GITHUB_WORKSPACE)
-rm -rf docker-base
-git clone git@github.com:legendu-net/docker-base.git
-cd docker-base
-pwd
+#!/usr/bin/env fish
+
+set -l dir_parent (dirname "$GITHUB_WORKSPACE")
+mkdir -p "$dir_parent"
+cd "$dir_parent"
+rm -rf "$GITHUB_WORKSPACE"
+git clone "git@github.com:$GITHUB_REPOSITORY.git"
+cd "$GITHUB_WORKSPACE"
+git remote -v
 ls -lha
