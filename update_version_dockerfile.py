@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "dulwich>=0.25.1",
-#     "github-rest-api>=0.27.0",
+#     "github-rest-api>=0.28.0",
 # ]
 # ///
 from pathlib import Path
