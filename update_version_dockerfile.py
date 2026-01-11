@@ -7,6 +7,7 @@
 # ]
 # ///
 from pathlib import Path
+import os
 import re
 from github_rest_api import Repository
 import argparse
@@ -15,8 +16,8 @@ from dulwich import porcelain
 DOCKERFILE = Path.cwd() / "Dockerfile"
 
 
-def parse_latest_version(token: str, repo: str) -> str:
-    release = Repository(token=token, repo=repo).get_release_latest()
+def parse_latest_version(repo: str) -> str:
+    release = Repository(token="", repo=repo).get_release_latest()
     version = release["tag_name"].replace("v", "")
     print(f"The latest version of {repo} is v{version}.")
     return version
@@ -28,14 +29,16 @@ def update_version(version: str, pattern: str, replace: str) -> None:
     DOCKERFILE.write_text(text)
 
 
-def push_changes(repo: str):
+def push_changes(repo: str, token: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
     porcelain.add(paths="Dockerfile")
     porcelain.commit(message=f"update version of {repo}")
-    porcelain.push(repo=".")
-    print("Changes have been committeed and pushed.")
+    porcelain.push(
+        repo=".",
+        remote_location=f"https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
+    )
 
 
 def parse_args():
@@ -43,7 +46,12 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Update the version of icon in Dockerfile."
     )
-    parser.add_argument("--token", dest="token", default="", help="A GitHub token.")
+    parser.add_argument(
+        "--token",
+        dest="token",
+        required=True,
+        help="A GitHub token for the repo to be updated.",
+    )
     parser.add_argument(
         "--repo",
         dest="repo",
@@ -67,9 +75,9 @@ def parse_args():
 
 def main():
     args = parse_args()
-    version = parse_latest_version(token=args.token, repo=args.repo)
+    version = parse_latest_version(repo=args.repo)
     update_version(version=version, pattern=args.pattern, replace=args.replace)
-    push_changes(repo=args.repo)
+    push_changes(repo=args.repo, token=args.token)
 
 
 if __name__ == "__main__":
