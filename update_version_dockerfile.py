@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "dulwich>=0.25.1",
-#     "github-rest-api>=0.26.0",
+#     "github-rest-api>=0.27.0",
 # ]
 # ///
 from pathlib import Path
@@ -12,12 +12,11 @@ from github_rest_api import Repository
 import argparse
 from dulwich import porcelain
 
-DOCKERFILE = Path(__file__).parent.parent / "Dockerfile"
+DOCKERFILE = Path.cwd() / "Dockerfile"
 
 
 def parse_latest_version(token: str, repo: str) -> str:
-    repo = Repository(token=token, repo=repo)
-    release = repo.get_release_latest()
+    release = Repository(token=token, repo=repo).get_release_latest()
     version = release["tag_name"].replace("v", "")
     print(f"The latest version of {repo} is v{version}.")
     return version
@@ -29,12 +28,12 @@ def update_version(version: str, pattern: str, replace: str) -> None:
     DOCKERFILE.write_text(text)
 
 
-def push_changes(branch: str, repo_watching: str):
+def push_changes(repo: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
     porcelain.add(paths="Dockerfile")
-    porcelain.commit(message=f"update version of {repo_watching}")
+    porcelain.commit(message=f"update version of {repo}")
     porcelain.push(repo=".")
     print("Changes have been committeed and pushed.")
 
@@ -68,8 +67,9 @@ def parse_args():
 
 def main():
     args = parse_args()
-    update_version(token=args.token, repo=args.repo)
-    push_changes(branch=args.branch)
+    version = parse_latest_version(token=args.token, repo=args.repo)
+    update_version(version=version, pattern=args.pattern, replace=args.replace)
+    push_changes(repo=args.repo)
 
 
 if __name__ == "__main__":
