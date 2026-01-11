@@ -10,6 +10,7 @@ from pathlib import Path
 import os
 import re
 from github_rest_api import Repository
+from github_rest_api.utils import strip_patch_version
 import argparse
 from dulwich import porcelain
 
@@ -24,9 +25,45 @@ def parse_latest_version(repo: str) -> str:
 
 
 def update_version(version: str, pattern: str, replace: str) -> None:
+    match os.getenv("GITHUB_REPOSITORY"):
+        case "legendu-net/docker-base":
+            return _update_version_docker_base(version=version)
+        case "legendu-net/docker-jupyterlab":
+            return _update_version_docker_jupyterlab(version=version)
+        case "legendu-net/docker-vscode-server":
+            return _update_version_docker_vscode_server(version=version)
+        case _:
+            if not pattern:
+                raise ValueError("A version pattern must be specified!")
+            return _update_version_default(
+                version=version, pattern=pattern, replace=replace
+            )
+
+
+def _update_version_default(version: str, pattern: str, replace: str) -> None:
     text = DOCKERFILE.read_text()
     text = re.sub(pattern, replace.format(version=version), text)
     DOCKERFILE.write_text(text)
+
+
+def _update_version_docker_base(version: str) -> None:
+    _update_version_default(
+        version=version, pattern=r"-v v\d+\.\d+\.\d+", replace="-v v{version}"
+    )
+
+
+def _update_version_docker_jupyterlab(version: str) -> None:
+    version = strip_patch_version(version)
+    _update_version_default(
+        version=version, pattern=r",<\d+\.\d+\.0", replace=",<{version}"
+    )
+
+
+def _update_version_docker_vscode_server(version: str) -> None:
+    version = strip_patch_version(version)
+    _update_version_default(
+        version=version, pattern=r",<\d+\.\d+\.0", replace=",<{version}"
+    )
 
 
 def push_changes(repo: str, token: str):
@@ -61,13 +98,13 @@ def parse_args():
     parser.add_argument(
         "--pattern",
         dest="pattern",
-        required=True,
+        default="",
         help="The version pattern to replace.",
     )
     parser.add_argument(
         "--replace",
         dest="replace",
-        required=True,
+        default="",
         help="The replacement for the matched version pattern.",
     )
     return parser.parse_args()
