@@ -3,7 +3,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "github-rest-api>=0.28.0",
+#     "github-rest-api>=0.29.0",
 # ]
 # ///
 
@@ -23,7 +23,8 @@ def parse_args(args=None, namespace=None) -> Namespace:
     :param namespace: An inital Namespace object.
     :return: A namespace object containing parsed options.
     """
-    parser = ArgumentParser(description="Create pull requests to the dev branch.")
+    parser = ArgumentParser(
+        description="Create pull requests to the dev branch.")
     parser.add_argument(
         "--token",
         dest="token",

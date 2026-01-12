@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "dulwich>=0.25.1",
-#     "github-rest-api>=0.28.0",
+#     "github-rest-api>=0.29.0",
 # ]
 # ///
 from pathlib import Path
@@ -74,7 +74,8 @@ def push_changes(repo: str, token: str):
     porcelain.commit(message=f"update version of {repo}")
     porcelain.push(
         repo=".",
-        remote_location=f"https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
+        remote_location=f"https://{token}@github.com/{
+            os.getenv('GITHUB_REPOSITORY')}.git",
     )
 
 
