@@ -9,6 +9,7 @@
 from pathlib import Path
 import os
 import re
+import subprocess as sp
 from github_rest_api import Repository
 from github_rest_api.utils import strip_patch_version
 import argparse
@@ -72,10 +73,17 @@ def push_changes(repo: str, token: str):
         return
     porcelain.add(paths="Dockerfile")
     porcelain.commit(message=f"update version of {repo}")
+    sp.run(
+        f"git push https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
+        shell=True,
+        check=True,
+    )
+    return
     porcelain.push(
         repo=".",
         remote_location=f"https://{token}@github.com/{
-            os.getenv('GITHUB_REPOSITORY')}.git",
+            os.getenv('GITHUB_REPOSITORY')
+        }.git",
     )
 
 
