@@ -49,7 +49,7 @@ def _update_version_default(version: str, pattern: str, replace: str) -> None:
 
 def _update_version_docker_base(version: str) -> None:
     _update_version_default(
-        version=version, pattern=r"-v v\d+\.\d+\.\d+", replace="-v v{version}"
+        version=version, pattern=r"-v v?\d+\.\d+\.\d+", replace="-v v{version}"
     )
 
 
