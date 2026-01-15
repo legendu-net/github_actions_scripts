@@ -73,11 +73,16 @@ def push_changes(repo: str, token: str):
         return
     porcelain.add(paths="Dockerfile")
     porcelain.commit(message=f"update version of {repo}")
-    sp.run(
-        f"git push https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
-        shell=True,
-        check=True,
-    )
+    try:
+        proc = sp.run(
+            f"git push https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
+            shell=True,
+            check=True,
+            capture=True
+        )
+        print(proc.stdout)
+    except Exception as err:
+        print(proc.stderr)
     return
     porcelain.push(
         repo=".",
