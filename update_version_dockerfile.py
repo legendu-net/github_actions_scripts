@@ -78,7 +78,7 @@ def push_changes(repo: str, token: str):
             f"git push https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
             shell=True,
             check=True,
-            capture=True
+            capture_output=True,
         )
         print(proc.stdout)
     except Exception as err:

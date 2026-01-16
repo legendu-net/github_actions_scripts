@@ -23,8 +23,7 @@ def parse_args(args=None, namespace=None) -> Namespace:
     :param namespace: An inital Namespace object.
     :return: A namespace object containing parsed options.
     """
-    parser = ArgumentParser(
-        description="Create pull requests to the dev branch.")
+    parser = ArgumentParser(description="Create pull requests to the dev branch.")
     parser.add_argument(
         "--token",
         dest="token",
