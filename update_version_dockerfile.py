@@ -82,7 +82,8 @@ def push_changes(repo: str, token: str):
         )
         print(proc.stdout)
     except Exception as err:
-        print(proc.stderr)
+        print(err.stdout)
+        print(err.stderr)
     return
     porcelain.push(
         repo=".",
