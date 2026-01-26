@@ -15,8 +15,6 @@ from github_rest_api.utils import strip_patch_version
 import argparse
 from dulwich import porcelain
 
-DOCKERFILE = Path.cwd() / "Dockerfile"
-
 
 def parse_latest_version(repo: str) -> str:
     release = Repository(token="", repo=repo).get_release_latest()
@@ -25,45 +23,66 @@ def parse_latest_version(repo: str) -> str:
     return version
 
 
-def update_version(version: str, pattern: str, replace: str) -> None:
-    match os.getenv("GITHUB_REPOSITORY"):
-        case "legendu-net/docker-base":
-            return _update_version_docker_base(version=version)
-        case "legendu-net/docker-jupyterlab":
-            return _update_version_docker_jupyterlab(version=version)
-        case "legendu-net/docker-vscode-server":
-            return _update_version_docker_vscode_server(version=version)
+def update_version(
+    dockerfile: str | Path, version: str, pattern: str, replace: str
+) -> None:
+    if dockerfile == "":
+        dockerfile = "Dockerfile"
+    if isinstance(dockerfile, str):
+        dockerfile = Path(dockerfile).resolve()
+    match dockerfile.parent.name:
+        case "docker-base":
+            return _update_version_docker_base(dockerfile=dockerfile, version=version)
+        case "docker-jupyterlab":
+            return _update_version_docker_jupyterlab(
+                dockerfile=dockerfile, version=version
+            )
+        case "docker-vscode-server":
+            return _update_version_docker_vscode_server(
+                dockerfile=dockerfile, version=version
+            )
         case _:
             if not pattern:
                 raise ValueError("A version pattern must be specified!")
             return _update_version_default(
-                version=version, pattern=pattern, replace=replace
+                dockerfile=dockerfile, version=version, pattern=pattern, replace=replace
             )
 
 
-def _update_version_default(version: str, pattern: str, replace: str) -> None:
-    text = DOCKERFILE.read_text()
+def _update_version_default(
+    dockerfile: Path, version: str, pattern: str, replace: str
+) -> None:
+    text = dockerfile.read_text()
     text = re.sub(pattern, replace.format(version=version), text)
-    DOCKERFILE.write_text(text)
+    dockerfile.write_text(text)
 
 
-def _update_version_docker_base(version: str) -> None:
+def _update_version_docker_base(dockerfile: Path, version: str) -> None:
     _update_version_default(
-        version=version, pattern=r"-v v?\d+\.\d+\.\d+", replace="-v v{version}"
+        dockerfile=dockerfile,
+        version=version,
+        pattern=r"-v v?\d+\.\d+\.\d+",
+        replace="-v v{version}",
     )
 
 
-def _update_version_docker_jupyterlab(version: str) -> None:
+def _update_version_docker_jupyterlab(dockerfile: Path, version: str) -> None:
     version = strip_patch_version(version)
     _update_version_default(
-        version=version, pattern=r",<\d+\.\d+\.0", replace=",<{version}"
+        dockerfile=dockerfile,
+        version=version,
+        pattern=r",<\d+\.\d+\.0",
+        replace=",<{version}",
     )
 
 
-def _update_version_docker_vscode_server(version: str) -> None:
+def _update_version_docker_vscode_server(dockerfile: Path, version: str) -> None:
     version = strip_patch_version(version)
     _update_version_default(
-        version=version, pattern=r",<\d+\.\d+\.0", replace=",<{version}"
+        dockerfile=dockerfile,
+        version=version,
+        pattern=r",<\d+\.\d+\.0",
+        replace=",<{version}",
     )
 
 
@@ -99,6 +118,12 @@ def parse_args():
         description="Update the version of icon in Dockerfile."
     )
     parser.add_argument(
+        "--dockerfile",
+        dest="dockerfile",
+        default="",
+        help="The Dockerfile to update.",
+    )
+    parser.add_argument(
         "--token",
         dest="token",
         required=True,
@@ -128,7 +153,12 @@ def parse_args():
 def main():
     args = parse_args()
     version = parse_latest_version(repo=args.repo)
-    update_version(version=version, pattern=args.pattern, replace=args.replace)
+    update_version(
+        dockerfile=args.dockerfile,
+        version=version,
+        pattern=args.pattern,
+        replace=args.replace,
+    )
     push_changes(repo=args.repo, token=args.token)
 
 
