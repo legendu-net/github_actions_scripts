@@ -37,6 +37,10 @@ def update_version(
             return _update_version_docker_jupyterlab(
                 dockerfile=dockerfile, version=version
             )
+        case "docker-jupyterhub":
+            return _update_version_docker_jupyterhub(
+                dockerfile=dockerfile, version=version
+            )
         case "docker-vscode-server":
             return _update_version_docker_vscode_server(
                 dockerfile=dockerfile, version=version
@@ -73,6 +77,16 @@ def _update_version_docker_jupyterlab(dockerfile: Path, version: str) -> None:
         version=version,
         pattern=r",<\d+\.\d+\.0",
         replace=",<{version}",
+    )
+
+
+def _update_version_docker_jupyterhub(dockerfile: Path, version: str) -> None:
+    version = strip_patch_version(version)
+    _update_version_default(
+        dockerfile=dockerfile,
+        version=version,
+        pattern=r"jupyterhub<\d+\.\d+\.0",
+        replace="jupyterhub<{version}",
     )
 
 
