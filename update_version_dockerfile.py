@@ -4,21 +4,32 @@
 # dependencies = [
 #     "dulwich>=0.25.1",
 #     "github-rest-api>=0.29.0",
+#     "requests>=2.33.1",
 # ]
 # ///
-from pathlib import Path
+import argparse
 import os
+from pathlib import Path
 import re
 import subprocess as sp
+from dulwich import porcelain
 from github_rest_api import Repository
 from github_rest_api.utils import strip_patch_version
-import argparse
-from dulwich import porcelain
+from requests.exceptions import HTTPError
 
 
 def parse_latest_version(repo: str) -> str:
-    release = Repository(token="", repo=repo).get_release_latest()
-    version = release["tag_name"].replace("v", "")
+    r = Repository(token="", repo=repo)
+    try:
+        release = r.get_release_latest()
+        version = release["tag_name"]
+    except HTTPError as err:
+        if err.response and err.response.status_code == 404:
+            tags = r._get(r._url_tags, params={"per_page": 1}).json()
+            version = tags[0]["name"]
+        else:
+            raise err
+    version = version.replace("v", "")
     print(f"The latest version of {repo} is v{version}.")
     return version
 
@@ -114,9 +125,11 @@ def push_changes(repo: str, token: str):
             capture_output=True,
         )
         print(proc.stdout)
-    except Exception as err:
+    except sp.CalledProcessError as err:
         print(err.stdout)
         print(err.stderr)
+    except Exception as err:
+        raise err
     return
     porcelain.push(
         repo=".",
