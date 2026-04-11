@@ -24,7 +24,7 @@ def parse_latest_version(repo: str) -> str:
         release = r.get_release_latest()
         version = release["tag_name"]
     except HTTPError as err:
-        if err.response and err.response.status_code == 404:
+        if err.response is not None and err.response.status_code == 404:
             tags = r._get(r._url_tags, params={"per_page": 1}).json()
             version = tags[0]["name"]
         else:
