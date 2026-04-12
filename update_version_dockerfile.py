@@ -115,7 +115,7 @@ def push_changes(repo: str, token: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
-    porcelain.add(paths="Dockerfile")
+    porcelain.add()
     porcelain.commit(message=f"update version of {repo}")
     try:
         proc = sp.run(
