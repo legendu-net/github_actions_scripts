@@ -11,7 +11,6 @@ import argparse
 import os
 from pathlib import Path
 import re
-import subprocess as sp
 from dulwich import porcelain
 from github_rest_api import Repository
 from github_rest_api.utils import strip_patch_version
@@ -111,26 +110,17 @@ def _update_version_docker_vscode_server(dockerfile: Path, version: str) -> None
     )
 
 
+def _branch(repo: str) -> str:
+    return repo + "/version"
+
+
 def push_changes(repo: str, token: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
+    porcelain.branch_create(repo=".", name=_branch(repo))
     porcelain.add()
     porcelain.commit(message=f"update version of {repo}")
-    try:
-        proc = sp.run(
-            f"git push https://{token}@github.com/{os.getenv('GITHUB_REPOSITORY')}.git",
-            shell=True,
-            check=True,
-            capture_output=True,
-        )
-        print(proc.stdout)
-    except sp.CalledProcessError as err:
-        print(err.stdout)
-        print(err.stderr)
-    except Exception as err:
-        raise err
-    return
     porcelain.push(
         repo=".",
         remote_location=f"https://{token}@github.com/{
@@ -177,8 +167,19 @@ def parse_args():
     return parser.parse_args()
 
 
+def has_open_pr(head: str) -> bool:
+    """Check if there's an existing PR with the specified head."""
+    prs = Repository(token="", repo="legendu-net/docker").get_pull_requests()
+    for pr in prs:
+        if pr["head"]["ref"] == head:
+            return True
+    return False
+
+
 def main():
     args = parse_args()
+    if has_open_pr(head=_branch(args.repo)):
+        return
     version = parse_latest_version(repo=args.repo)
     update_version(
         dockerfile=args.dockerfile,
