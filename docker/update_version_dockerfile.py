@@ -118,7 +118,9 @@ def push_changes(repo: str, token: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
-    porcelain.branch_create(repo=".", name=_branch(repo))
+    branch = _branch(repo)
+    porcelain.branch_create(repo=".", name=branch)
+    porcelain.checkout(repo=".", target=branch)
     porcelain.add()
     porcelain.commit(message=f"update version of {repo}")
     porcelain.push(
