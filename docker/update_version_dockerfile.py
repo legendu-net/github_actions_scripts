@@ -111,7 +111,7 @@ def _update_version_docker_vscode_server(dockerfile: Path, version: str) -> None
 
 
 def _branch(repo: str) -> str:
-    return repo + "/version"
+    return repo.replace("/", "_") + "_version"
 
 
 def push_changes(repo: str, token: str):
