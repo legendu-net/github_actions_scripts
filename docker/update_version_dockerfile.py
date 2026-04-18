@@ -13,7 +13,6 @@ from pathlib import Path
 import re
 from dulwich import porcelain
 from github_rest_api import Repository
-from github_rest_api.utils import strip_patch_version
 from requests.exceptions import HTTPError
 
 
@@ -31,6 +30,21 @@ def parse_latest_version(repo: str) -> str:
     version = version.replace("v", "")
     print(f"The latest version of {repo} is v{version}.")
     return version
+
+
+def next_minor_or_strip_patch(version: str, patch_to_bump: int) -> str:
+    """Get the next minor version of strip the patch version.
+
+    If the patch version is less than patch_to_bump, then strip the patch version;
+    otherwise, bump version to the next minor one.
+    For example,
+    - next_minor_or_strip_patch("5.4.6", 4) ==> "5.5.0"
+    - next_minor_or_strip_patch("5.4.6", 8) ==> "5.4.0"
+    """
+    major, minor, patch = map(int, version.split("."))
+    if patch >= patch_to_bump:
+        minor += 1
+    return f"{major}.{minor}.0"
 
 
 def update_version(
@@ -81,7 +95,7 @@ def _update_version_docker_base(dockerfile: Path, version: str) -> None:
 
 
 def _update_version_docker_jupyterlab(dockerfile: Path, version: str) -> None:
-    version = strip_patch_version(version)
+    version = next_minor_or_strip_patch(version, 3)
     _update_version_default(
         dockerfile=dockerfile,
         version=version,
@@ -91,7 +105,7 @@ def _update_version_docker_jupyterlab(dockerfile: Path, version: str) -> None:
 
 
 def _update_version_docker_jupyterhub(dockerfile: Path, version: str) -> None:
-    version = strip_patch_version(version)
+    version = next_minor_or_strip_patch(version, 3)
     _update_version_default(
         dockerfile=dockerfile,
         version=version,
@@ -101,7 +115,7 @@ def _update_version_docker_jupyterhub(dockerfile: Path, version: str) -> None:
 
 
 def _update_version_docker_vscode_server(dockerfile: Path, version: str) -> None:
-    version = strip_patch_version(version)
+    version = next_minor_or_strip_patch(version, 3)
     _update_version_default(
         dockerfile=dockerfile,
         version=version,
