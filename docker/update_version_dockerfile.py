@@ -8,6 +8,7 @@
 # ]
 # ///
 import argparse
+import datetime
 import os
 from pathlib import Path
 import re
@@ -124,7 +125,7 @@ def _update_version_docker_vscode_server(dockerfile: Path, version: str) -> None
     )
 
 
-def _branch(repo: str) -> str:
+def _branch_prefix(repo: str) -> str:
     return repo.replace("/", "_") + "_version"
 
 
@@ -132,7 +133,7 @@ def push_changes(repo: str, token: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
-    branch = _branch(repo)
+    branch = _branch_prefix(repo) + datetime.date.today().strftime("_%Y%m%d")
     porcelain.branch_create(repo=".", name=branch)
     porcelain.add()
     porcelain.commit(message=f"update version of {repo}")
@@ -183,18 +184,21 @@ def parse_args():
     return parser.parse_args()
 
 
-def has_open_pr(head: str) -> bool:
-    """Check if there's an existing PR with the specified head."""
+def has_open_pr(head_prefix: str) -> bool:
+    """Check if there's an open PR whose head starts with head_prefix.
+
+    :param head_prefix: The prefix of head to check for.
+    """
     prs = Repository(token="", repo="legendu-net/docker").get_pull_requests()
     for pr in prs:
-        if pr["head"]["ref"] == head:
+        if pr["head"]["ref"].startswith(head_prefix):
             return True
     return False
 
 
 def main():
     args = parse_args()
-    if has_open_pr(head=_branch(args.repo)):
+    if has_open_pr(head_prefix=_branch_prefix(args.repo)):
         return
     version = parse_latest_version(repo=args.repo)
     update_version(
