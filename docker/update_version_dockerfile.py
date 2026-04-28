@@ -135,9 +135,9 @@ def push_changes(repo: str, token: str):
         return
     branch = _branch_prefix(repo) + datetime.date.today().strftime("_%Y%m%d")
     porcelain.branch_create(repo=".", name=branch)
+    porcelain.checkout(repo=".", target=branch)
     porcelain.add()
     porcelain.commit(message=f"update version of {repo}")
-    porcelain.checkout(repo=".", target=branch)
     porcelain.push(
         repo=".",
         remote_location=f"https://{token}@github.com/{
