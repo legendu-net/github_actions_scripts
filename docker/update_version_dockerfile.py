@@ -133,9 +133,6 @@ def push_changes(repo: str, token: str):
     if not porcelain.status().unstaged:
         print("No changes!")
         return
-    branch = _branch_prefix(repo) + datetime.date.today().strftime("_%Y%m%d")
-    porcelain.branch_create(repo=".", name=branch)
-    porcelain.checkout(repo=".", target=branch)
     porcelain.add()
     porcelain.commit(message=f"update version of {repo}")
     porcelain.push(
@@ -196,10 +193,17 @@ def has_open_pr(head_prefix: str) -> bool:
     return False
 
 
+def checkout_branch(repo: str):
+    branch = _branch_prefix(repo) + datetime.date.today().strftime("_%Y%m%d")
+    porcelain.branch_create(repo=".", name=branch)
+    porcelain.checkout(repo=".", target=branch)
+
+
 def main():
     args = parse_args()
     if has_open_pr(head_prefix=_branch_prefix(args.repo)):
         return
+    checkout_branch(args.repo)
     version = parse_latest_version(repo=args.repo)
     update_version(
         dockerfile=args.dockerfile,
