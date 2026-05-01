@@ -3,7 +3,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "github-rest-api>=0.34.0",
+#     "github-rest-api>=0.34.1",
 # ]
 # ///
 import argparse
@@ -84,6 +84,11 @@ def remove_branch(token: str, repo: str, pattern: str) -> None:
     for branch in branches:
         branch_name = branch["name"]
         if not regex.search(branch_name):
+            print(
+                f"Skipping branch {branch_name} as it doesn't match the pattern '{
+                    pattern
+                }'."
+            )
             continue
 
         if branch_name in active_branches:
