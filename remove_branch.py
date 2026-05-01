@@ -3,7 +3,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "github-rest-api>=0.34.0",
+#     "github-rest-api>=0.34.1",
 # ]
 # ///
 import argparse

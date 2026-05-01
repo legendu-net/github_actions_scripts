@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "dulwich>=0.25.1",
-#     "github-rest-api>=0.29.0",
+#     "github-rest-api>=0.34.1",
 #     "requests>=2.33.1",
 # ]
 # ///
