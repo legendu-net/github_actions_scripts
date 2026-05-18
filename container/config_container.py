@@ -35,17 +35,20 @@ def config_docker(data_root: str = "/mnt/docker"):
     sp.run("docker info", shell=True, check=True)
 
 
-def config_podman(graph_root: str = "/mnt/podman"):
+def config_podman(graphroot: str = "/mnt/podman"):
     if not shutil.which("podman"):
         print("Podman not found, skipping Podman configuration.")
         return
-    Path(graph_root).mkdir(parents=True, exist_ok=True)
+    Path(graphroot).mkdir(parents=True, exist_ok=True)
     path = Path("/etc/containers/storage.conf")
     settings: dict = {}
     if path.is_file():
         with path.open("rb") as fin:
             settings = tomllib.load(fin)
-    settings.setdefault("storage", {})["graphRoot"] = graph_root
+    storage = settings.setdefault("storage", {})
+    storage["graphroot"] = graphroot
+    storage.setdefault("driver", "overlay")
+    storage.setdefault("runroot", "/run/containers/storage")
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("wb") as fout:
         tomli_w.dump(settings, fout)
