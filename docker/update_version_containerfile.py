@@ -49,76 +49,76 @@ def next_minor_or_strip_patch(version: str, patch_to_bump: int) -> str:
 
 
 def update_version(
-    dockerfile: str | Path, version: str, pattern: str, replace: str
+    containerfile: str | Path, version: str, pattern: str, replace: str
 ) -> None:
-    if dockerfile == "":
-        dockerfile = "Dockerfile"
-    if isinstance(dockerfile, str):
-        dockerfile = Path(dockerfile).resolve()
-    match dockerfile.parent.name:
+    if containerfile == "":
+        containerfile = "Dockerfile" if Path("Dockerfile").exists() else "Containerfile"
+    if isinstance(containerfile, str):
+        containerfile = Path(containerfile).resolve()
+    match containerfile.parent.name:
         case "docker-base":
-            return _update_version_docker_base(dockerfile=dockerfile, version=version)
+            return _update_version_docker_base(containerfile=containerfile, version=version)
         case "docker-jupyterlab":
             return _update_version_docker_jupyterlab(
-                dockerfile=dockerfile, version=version
+                containerfile=containerfile, version=version
             )
         case "docker-jupyterhub":
             return _update_version_docker_jupyterhub(
-                dockerfile=dockerfile, version=version
+                containerfile=containerfile, version=version
             )
         case "docker-vscode-server":
             return _update_version_docker_vscode_server(
-                dockerfile=dockerfile, version=version
+                containerfile=containerfile, version=version
             )
         case _:
             if not pattern:
                 raise ValueError("A version pattern must be specified!")
             return _update_version_default(
-                dockerfile=dockerfile, version=version, pattern=pattern, replace=replace
+                containerfile=containerfile, version=version, pattern=pattern, replace=replace
             )
 
 
 def _update_version_default(
-    dockerfile: Path, version: str, pattern: str, replace: str
+    containerfile: Path, version: str, pattern: str, replace: str
 ) -> None:
-    text = dockerfile.read_text()
+    text = containerfile.read_text()
     text = re.sub(pattern, replace.format(version=version), text)
-    dockerfile.write_text(text)
+    containerfile.write_text(text)
 
 
-def _update_version_docker_base(dockerfile: Path, version: str) -> None:
+def _update_version_docker_base(containerfile: Path, version: str) -> None:
     _update_version_default(
-        dockerfile=dockerfile,
+        containerfile=containerfile,
         version=version,
         pattern=r"-v v?\d+\.\d+\.\d+",
         replace="-v v{version}",
     )
 
 
-def _update_version_docker_jupyterlab(dockerfile: Path, version: str) -> None:
+def _update_version_docker_jupyterlab(containerfile: Path, version: str) -> None:
     version = next_minor_or_strip_patch(version, 3)
     _update_version_default(
-        dockerfile=dockerfile,
+        containerfile=containerfile,
         version=version,
         pattern=r",<\d+\.\d+\.0",
         replace=",<{version}",
     )
 
 
-def _update_version_docker_jupyterhub(dockerfile: Path, version: str) -> None:
+def _update_version_docker_jupyterhub(containerfile: Path, version: str) -> None:
     version = next_minor_or_strip_patch(version, 3)
     _update_version_default(
-        dockerfile=dockerfile,
+        containerfile=containerfile,
         version=version,
         pattern=r"jupyterhub<\d+\.\d+\.0",
         replace="jupyterhub<{version}",
     )
 
 
-def _update_version_docker_vscode_server(dockerfile: Path, version: str) -> None:
+def _update_version_docker_vscode_server(containerfile: Path, version: str) -> None:
     version = next_minor_or_strip_patch(version, 3)
     _update_version_default(
-        dockerfile=dockerfile,
+        containerfile=containerfile,
         version=version,
         pattern=r",<\d+\.\d+\.0",
         replace=",<{version}",
@@ -146,13 +146,13 @@ def push_changes(repo: str, token: str):
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Update the version of icon in Dockerfile."
+        description="Update the version of a package in a Dockerfile or Containerfile."
     )
     parser.add_argument(
-        "--dockerfile",
-        dest="dockerfile",
+        "--containerfile",
+        dest="containerfile",
         default="",
-        help="The Dockerfile to update.",
+        help="The Dockerfile or Containerfile to update.",
     )
     parser.add_argument(
         "--token",
@@ -206,7 +206,7 @@ def main():
     checkout_branch(args.repo)
     version = parse_latest_version(repo=args.repo)
     update_version(
-        dockerfile=args.dockerfile,
+        containerfile=args.containerfile,
         version=version,
         pattern=args.pattern,
         replace=args.replace,
