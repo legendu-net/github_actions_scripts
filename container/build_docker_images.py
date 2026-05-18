@@ -51,11 +51,15 @@ def _get_commit(name: bytes) -> bytes:
     raise KeyError(f"Cannot resolve commit or branch: {name}")
 
 
-def changed_files_between(commit1: bytes, commit2: bytes) -> list[Path]:
+def changed_files_between(
+    commit1: bytes, commit2: bytes, name1: str = "", name2: str = ""
+) -> list[Path]:
     """Get a unique list of changed files between 2 commits.
 
     :param commit1: The first commit ID.
     :param commit2: The second commit ID.
+    :param name1: Optional human-readable name for commit1 used in logging (defaults to the commit SHA).
+    :param name2: Optional human-readable name for commit2 used in logging (defaults to the commit SHA).
     :return: A unique list of changed files.
     """
     repo = Repo(".")
@@ -68,10 +72,18 @@ def changed_files_between(commit1: bytes, commit2: bytes) -> list[Path]:
             files.add(change.old.path.decode())
         if change.new and change.new.path:
             files.add(change.new.path.decode())
-    return sorted(Path(file).resolve() for file in files)
+    files = sorted(files)
+    print(
+        f"Changed files between {name1 or commit1.decode()} and {name2 or commit2.decode()}:"
+    )
+    for file in files:
+        print(f"  {file}")
+    return [Path(file).resolve() for file in files]
 
 
-def has_relevant_changes(commit1: str | bytes, commit2: str | bytes) -> bool:
+def has_relevant_changes(
+    commit1: str | bytes, commit2: str | bytes, name1: str = "", name2: str = ""
+) -> bool:
     if not commit1 or not commit2:
         return True
     if isinstance(commit1, str):
@@ -79,7 +91,7 @@ def has_relevant_changes(commit1: str | bytes, commit2: str | bytes) -> bool:
     if isinstance(commit2, str):
         commit2 = commit2.encode()
     dirs = [Path(d).resolve() for d in DIRS]
-    for p in changed_files_between(commit1, commit2):
+    for p in changed_files_between(commit1, commit2, name1=name1, name2=name2):
         if any(p.is_relative_to(d) for d in dirs):
             return True
     return False
@@ -91,7 +103,7 @@ def has_relevant_changes_main_dev() -> bool:
         c_dev = _get_commit(b"dev")
     except Exception:
         return True
-    return has_relevant_changes(c_main, c_dev)
+    return has_relevant_changes(c_main, c_dev, name1="main", name2="dev")
 
 
 def _tag_date(tag: str) -> str:

@@ -57,7 +57,9 @@ def update_version(
         containerfile = Path(containerfile).resolve()
     match containerfile.parent.name:
         case "docker-base":
-            return _update_version_docker_base(containerfile=containerfile, version=version)
+            return _update_version_docker_base(
+                containerfile=containerfile, version=version
+            )
         case "docker-jupyterlab":
             return _update_version_docker_jupyterlab(
                 containerfile=containerfile, version=version
@@ -74,7 +76,10 @@ def update_version(
             if not pattern:
                 raise ValueError("A version pattern must be specified!")
             return _update_version_default(
-                containerfile=containerfile, version=version, pattern=pattern, replace=replace
+                containerfile=containerfile,
+                version=version,
+                pattern=pattern,
+                replace=replace,
             )
 
 
