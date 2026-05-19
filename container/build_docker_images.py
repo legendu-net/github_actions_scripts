@@ -51,11 +51,15 @@ def _get_commit(name: bytes) -> bytes:
     raise KeyError(f"Cannot resolve commit or branch: {name}")
 
 
-def changed_files_between(commit1: bytes, commit2: bytes) -> list[Path]:
+def changed_files_between(
+    commit1: bytes, commit2: bytes, name1: str = "", name2: str = ""
+) -> list[Path]:
     """Get a unique list of changed files between 2 commits.
 
     :param commit1: The first commit ID.
     :param commit2: The second commit ID.
+    :param name1: Optional human-readable name for commit1 used in logging (defaults to the commit SHA).
+    :param name2: Optional human-readable name for commit2 used in logging (defaults to the commit SHA).
     :return: A unique list of changed files.
     """
     repo = Repo(".")
@@ -68,10 +72,19 @@ def changed_files_between(commit1: bytes, commit2: bytes) -> list[Path]:
             files.add(change.old.path.decode())
         if change.new and change.new.path:
             files.add(change.new.path.decode())
-    return sorted(Path(file).resolve() for file in files)
+    paths = sorted(Path(file) for file in files)
+    print(
+        f"Changed files between {name1 or commit1.decode()[:7]} and {
+            name2 or commit2.decode()[:7]}:"
+    )
+    for p in paths:
+        print(f"  {p}")
+    return paths
 
 
-def has_relevant_changes(commit1: str | bytes, commit2: str | bytes) -> bool:
+def has_relevant_changes(
+    commit1: str | bytes, commit2: str | bytes, name1: str = "", name2: str = ""
+) -> bool:
     if not commit1 or not commit2:
         return True
     if isinstance(commit1, str):
@@ -79,8 +92,8 @@ def has_relevant_changes(commit1: str | bytes, commit2: str | bytes) -> bool:
     if isinstance(commit2, str):
         commit2 = commit2.encode()
     dirs = [Path(d).resolve() for d in DIRS]
-    for p in changed_files_between(commit1, commit2):
-        if any(p.is_relative_to(d) for d in dirs):
+    for p in changed_files_between(commit1, commit2, name1=name1, name2=name2):
+        if any(p.resolve().is_relative_to(d) for d in dirs):
             return True
     return False
 
@@ -91,7 +104,7 @@ def has_relevant_changes_main_dev() -> bool:
         c_dev = _get_commit(b"dev")
     except Exception:
         return True
-    return has_relevant_changes(c_main, c_dev)
+    return has_relevant_changes(c_main, c_dev, name1="main", name2="dev")
 
 
 def _tag_date(tag: str) -> str:
@@ -131,14 +144,16 @@ def _build_image(dir_: str, tags: str | list[str]):
 def build_images(commit1: str, commit2: str):
     if not has_relevant_changes(commit1, commit2):
         print(
-            f"Skip building Docker images as there are no relevant changes between {commit1} and {commit2}.\n"
+            f"Skip building Docker images as there are no relevant changes between {
+                commit1} and {commit2}.\n"
         )
         return
     tags = ["next"]
     if not has_relevant_changes_main_dev():
         tags.append("latest")
     tags.extend([_tag_date(tag) for tag in tags])
-    print("Building Docker images using tags:", ", ".join(tags), "\n", flush=True)
+    print("Building Docker images using tags:",
+          ", ".join(tags), "\n", flush=True)
     failures = []
     for dir_ in DIRS:
         try:
@@ -161,7 +176,8 @@ def test_has_relevant_changes():
     # Verification with relevant changes (docker-base modified in 92d141a)
     c_base_prev = "fad79533497acbf6d84c615a935282e8a6ff2872"
     c_base_curr = "92d141a8cd432581526fa6a11cb8574918d643dc"
-    print(f"Testing relevant change between {c_base_prev} and {c_base_curr}...")
+    print(f"Testing relevant change between {
+          c_base_prev} and {c_base_curr}...")
     assert has_relevant_changes(c_base_prev, c_base_curr)
 
     # Verification with empty SHAs (should return True by default)
