@@ -45,7 +45,9 @@ def _get_commit(name: bytes) -> bytes:
     raise KeyError(f"Cannot resolve commit or branch: {name}")
 
 
-def changed_files_between(commit1: bytes, commit2: bytes, name1: str = "", name2: str = "") -> list[Path]:
+def changed_files_between(
+    commit1: bytes, commit2: bytes, name1: str = "", name2: str = ""
+) -> list[Path]:
     """Get a unique list of changed files between 2 commits.
 
     :param commit1: The first commit ID.
@@ -64,14 +66,19 @@ def changed_files_between(commit1: bytes, commit2: bytes, name1: str = "", name2
             files.add(change.old.path.decode())
         if change.new and change.new.path:
             files.add(change.new.path.decode())
-    files = sorted(files)
-    print(f"Changed files between {name1 or commit1.decode()} and {name2 or commit2.decode()}:")
-    for file in files:
-        print(f"  {file}")
-    return [Path(file).resolve() for file in files]
+    paths = sorted(Path(file) for file in files)
+    print(
+        f"Changed files between {name1 or commit1.decode()[:7]} and {
+            name2 or commit2.decode()[:7]}:"
+    )
+    for p in paths:
+        print(f"  {p}")
+    return paths
 
 
-def has_relevant_changes(commit1: str | bytes, commit2: str | bytes, name1: str = "", name2: str = "") -> bool:
+def has_relevant_changes(
+    commit1: str | bytes, commit2: str | bytes, name1: str = "", name2: str = ""
+) -> bool:
     if not commit1 or not commit2:
         return True
     if isinstance(commit1, str):
@@ -80,7 +87,7 @@ def has_relevant_changes(commit1: str | bytes, commit2: str | bytes, name1: str 
         commit2 = commit2.encode()
     dirs = [Path(d).resolve() for d in DIRS]
     for p in changed_files_between(commit1, commit2, name1=name1, name2=name2):
-        if any(p.is_relative_to(d) for d in dirs):
+        if any(p.resolve().is_relative_to(d) for d in dirs):
             return True
     return False
 
@@ -131,14 +138,16 @@ def _build_image(dir_: str, tags: str | list[str]):
 def build_images(commit1: str, commit2: str):
     if not has_relevant_changes(commit1, commit2):
         print(
-            f"Skip building Podman images as there are no relevant changes between {commit1} and {commit2}.\n"
+            f"Skip building Podman images as there are no relevant changes between {
+                commit1} and {commit2}.\n"
         )
         return
     tags = ["next"]
     if not has_relevant_changes_main_dev():
         tags.append("latest")
     tags.extend([_tag_date(tag) for tag in tags])
-    print("Building Podman images using tags:", ", ".join(tags), "\n", flush=True)
+    print("Building Podman images using tags:",
+          ", ".join(tags), "\n", flush=True)
     failures = []
     for dir_ in DIRS:
         try:

@@ -72,13 +72,14 @@ def changed_files_between(
             files.add(change.old.path.decode())
         if change.new and change.new.path:
             files.add(change.new.path.decode())
-    files = sorted(files)
+    paths = sorted(Path(file) for file in files)
     print(
-        f"Changed files between {name1 or commit1.decode()} and {name2 or commit2.decode()}:"
+        f"Changed files between {name1 or commit1.decode()[:7]} and {
+            name2 or commit2.decode()[:7]}:"
     )
-    for file in files:
-        print(f"  {file}")
-    return [Path(file).resolve() for file in files]
+    for p in paths:
+        print(f"  {p}")
+    return paths
 
 
 def has_relevant_changes(
@@ -92,7 +93,7 @@ def has_relevant_changes(
         commit2 = commit2.encode()
     dirs = [Path(d).resolve() for d in DIRS]
     for p in changed_files_between(commit1, commit2, name1=name1, name2=name2):
-        if any(p.is_relative_to(d) for d in dirs):
+        if any(p.resolve().is_relative_to(d) for d in dirs):
             return True
     return False
 
@@ -143,14 +144,16 @@ def _build_image(dir_: str, tags: str | list[str]):
 def build_images(commit1: str, commit2: str):
     if not has_relevant_changes(commit1, commit2):
         print(
-            f"Skip building Docker images as there are no relevant changes between {commit1} and {commit2}.\n"
+            f"Skip building Docker images as there are no relevant changes between {
+                commit1} and {commit2}.\n"
         )
         return
     tags = ["next"]
     if not has_relevant_changes_main_dev():
         tags.append("latest")
     tags.extend([_tag_date(tag) for tag in tags])
-    print("Building Docker images using tags:", ", ".join(tags), "\n", flush=True)
+    print("Building Docker images using tags:",
+          ", ".join(tags), "\n", flush=True)
     failures = []
     for dir_ in DIRS:
         try:
@@ -173,7 +176,8 @@ def test_has_relevant_changes():
     # Verification with relevant changes (docker-base modified in 92d141a)
     c_base_prev = "fad79533497acbf6d84c615a935282e8a6ff2872"
     c_base_curr = "92d141a8cd432581526fa6a11cb8574918d643dc"
-    print(f"Testing relevant change between {c_base_prev} and {c_base_curr}...")
+    print(f"Testing relevant change between {
+          c_base_prev} and {c_base_curr}...")
     assert has_relevant_changes(c_base_prev, c_base_curr)
 
     # Verification with empty SHAs (should return True by default)
